@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
+import Control.Applicative ((<$>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger
 import Control.Monad.Trans.Resource (runResourceT, ResourceT)

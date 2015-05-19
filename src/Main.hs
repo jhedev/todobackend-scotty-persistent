@@ -69,6 +69,7 @@ main = do
       tid <- liftIO $ insertTodo todo
       json tid
     delete "/todos" $ liftIO $ runDb $ DB.deleteWhere ([] :: [Sqlite.Filter Todo])
+    matchAny "/todos" $ text "ok"
   where
     readTodos :: IO [Sqlite.Entity Todo]
     readTodos =  runDb $ DB.selectList [] []

@@ -17,13 +17,19 @@ cabal-version:       >=1.10
 
 executable todobackend-scotty
   main-is:             Main.hs
+  ghc-options:         -Wall
   -- other-modules:       
   -- other-extensions:    
   build-depends:         base >=4.7 && <4.9
+                       , http-types
+                       , monad-logger
+                       , path-pieces
                        , persistent
                        , persistent-sqlite
                        , persistent-template
+                       , resourcet
                        , scotty
+                       , transformers
                        , wai
                        , wai-extra
 

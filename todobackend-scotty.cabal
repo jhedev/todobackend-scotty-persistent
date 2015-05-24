@@ -21,6 +21,7 @@ executable todobackend-scotty
   -- other-modules:       
   -- other-extensions:    
   build-depends:         base >=4.6 && <4.9
+                       , aeson
                        , http-types
                        , monad-logger
                        , path-pieces

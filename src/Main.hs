@@ -120,6 +120,7 @@ main = do
       json (Sqlite.Entity tid todo)
     delete "/todos" $ liftIO $ runDb $ DB.deleteWhere ([] :: [Sqlite.Filter Todo])
     matchAny "/todos" $ text "ok"
+    matchAny "/todos/:id" $ text "ok"
   where
     readTodos :: IO [Sqlite.Entity Todo]
     readTodos =  runDb $ DB.selectList [] []

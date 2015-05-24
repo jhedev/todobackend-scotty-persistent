@@ -7,9 +7,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
 import Control.Applicative ((<$>))
+import Control.Monad (mzero)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger
 import Control.Monad.Trans.Resource (runResourceT, ResourceT)
+import Data.Aeson hiding (json)
+import Data.Maybe (fromMaybe)
 import Network.HTTP.Types.Status (status404)
 import Network.Wai (Middleware)
 import Network.Wai.Middleware.AddHeaders
@@ -23,13 +26,42 @@ import Database.Persist.TH
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 Todo json
-    url String
     title String
     completed Bool
     order Int
     deriving Show
 |]
 
+data TodoAction = TodoAction
+  { _actTitle :: Maybe String
+  , _actCompleted :: Maybe Bool
+  , _actOrder :: Maybe Int
+  } deriving Show
+
+instance FromJSON TodoAction where
+  parseJSON (Object o) = TodoAction
+                         <$> o .:? "title"
+                         <*> o .:? "completed"
+                         <*> o .:? "order"
+  parseJSON _ = mzero
+
+instance ToJSON TodoAction where
+  toJSON (TodoAction mTitle mCompl mOrder) = noNullsObject
+      [ "title"     .= mTitle
+      , "completed" .= mCompl
+      , "order"     .= mOrder
+      ]
+    where
+      noNullsObject = object . filter notNull
+      notNull (_, Null) = False
+      notNull _         = True
+
+actionToTodo :: TodoAction -> Todo
+actionToTodo (TodoAction mTitle mCompleted mOrder) = Todo title completed order
+  where
+    title     = fromMaybe "" mTitle
+    completed = fromMaybe False mCompleted
+    order     = fromMaybe 0 mOrder
 
 allowCors :: Middleware
 allowCors = addHeaders [
@@ -59,16 +91,18 @@ main = do
     patch "/todos/:id" $ do
       pid <- param "id"
       actionOr404 pid (\tid -> do
-                          todo <- jsonData
-                          liftIO $ replaceTodo tid todo)
+                          todoAct <- jsonData
+                          let todo = actionToTodo todoAct
+                          liftIO $ replaceTodo tid todo
+                          json todoAct)
     delete "/todos/:id" $ do
       pid <- param "id"
       actionOr404 pid (liftIO . deleteTodo)
     post "/todos" $ do
-      todo <- jsonData
-      tid <- liftIO $ insertTodo todo
-      Just todo' <- liftIO $ readTodo tid
-      json todo'
+      todoAct <- jsonData
+      let todo = actionToTodo todoAct
+      _ <- liftIO $ insertTodo todo
+      json todoAct
     delete "/todos" $ liftIO $ runDb $ DB.deleteWhere ([] :: [Sqlite.Filter Todo])
     matchAny "/todos" $ text "ok"
   where

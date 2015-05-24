@@ -30,6 +30,7 @@ executable todobackend-scotty
                        , persistent-template
                        , resourcet
                        , scotty
+                       , text
                        , transformers
                        , wai
                        , wai-extra

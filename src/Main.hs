@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -12,7 +13,9 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger
 import Control.Monad.Trans.Resource (runResourceT, ResourceT)
 import Data.Aeson hiding (json)
+import qualified Data.Text as Text
 import Data.Maybe (fromMaybe)
+import GHC.Generics
 import Network.HTTP.Types.Status (status404)
 import Network.Wai (Middleware)
 import Network.Wai.Middleware.AddHeaders
@@ -25,12 +28,28 @@ import Database.Persist.TH
 
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
-Todo json
+Todo
     title String
     completed Bool
     order Int
-    deriving Show
+    deriving Show Generic
 |]
+
+instance ToJSON Todo where
+
+instance ToJSON (Sqlite.Entity Todo) where
+  toJSON entity = object
+      [ "id" .= key
+      , "url" .= ("http://todobackend-scotty.herokuapp.com/todos/" ++ keyText)
+      , "title" .= todoTitle val
+      , "completed" .= todoCompleted val
+      , "order" .= todoOrder val
+      ]
+    where
+      key = Sqlite.entityKey entity
+      val = Sqlite.entityVal entity
+      keyText = Text.unpack $ toPathPiece key
+
 
 data TodoAction = TodoAction
   { _actTitle :: Maybe String

@@ -109,7 +109,7 @@ main = do
                           todoAct <- jsonData
                           let todo = actionToTodo todoAct
                           liftIO $ replaceTodo tid todo
-                          json todoAct)
+                          json (Sqlite.Entity tid todo))
     delete "/todos/:id" $ do
       pid <- param "id"
       actionOr404 pid (liftIO . deleteTodo)

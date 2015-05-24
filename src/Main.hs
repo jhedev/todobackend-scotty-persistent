@@ -67,7 +67,8 @@ main = do
     post "/todos" $ do
       todo <- jsonData
       tid <- liftIO $ insertTodo todo
-      json tid
+      Just todo' <- liftIO $ readTodo tid
+      json todo'
     delete "/todos" $ liftIO $ runDb $ DB.deleteWhere ([] :: [Sqlite.Filter Todo])
     matchAny "/todos" $ text "ok"
   where

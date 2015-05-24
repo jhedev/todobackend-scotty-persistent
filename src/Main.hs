@@ -1,5 +1,4 @@
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -13,9 +12,10 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger
 import Control.Monad.Trans.Resource (runResourceT, ResourceT)
 import Data.Aeson hiding (json)
+import Data.Aeson.TH
+import Data.Char (toLower)
 import qualified Data.Text as Text
 import Data.Maybe (fromMaybe)
-import GHC.Generics
 import Network.HTTP.Types.Status (status404)
 import Network.Wai (Middleware)
 import Network.Wai.Middleware.AddHeaders
@@ -32,10 +32,10 @@ Todo
     title String
     completed Bool
     order Int
-    deriving Show Generic
+    deriving Show
 |]
 
-instance ToJSON Todo where
+$(deriveToJSON defaultOptions { fieldLabelModifier = (map toLower . drop 4)} ''Todo)
 
 instance ToJSON (Sqlite.Entity Todo) where
   toJSON entity = object

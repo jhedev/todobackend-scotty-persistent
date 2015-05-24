@@ -55,9 +55,9 @@ data TodoAction = TodoAction
 
 instance FromJSON TodoAction where
   parseJSON (Object o) = TodoAction
-                         <$> o .:? "title"
-                         <*> o .:? "completed"
-                         <*> o .:? "order"
+    <$> o .:? "title"
+    <*> o .:? "completed"
+    <*> o .:? "order"
   parseJSON _ = mzero
 
 instance ToJSON TodoAction where

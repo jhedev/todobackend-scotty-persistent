@@ -12,8 +12,6 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger
 import Control.Monad.Trans.Resource (runResourceT, ResourceT)
 import Data.Aeson hiding (json)
-import Data.Aeson.TH
-import Data.Char (toLower)
 import qualified Data.Text as Text
 import Data.Maybe (fromMaybe)
 import Network.HTTP.Types.Status (status404)
@@ -34,8 +32,6 @@ Todo
     order Int
     deriving Show
 |]
-
-$(deriveToJSON defaultOptions { fieldLabelModifier = (map toLower . drop 4)} ''Todo)
 
 instance ToJSON (Sqlite.Entity Todo) where
   toJSON entity = object
@@ -105,8 +101,8 @@ main = do
     get "/todos/:id" $ do
       pid <- param "id"
       actionOr404 pid (\tid -> do
-                todo <- liftIO $ readTodo tid
-                json todo)
+                Just todo <- liftIO $ readTodo tid
+                json (Sqlite.Entity tid todo))
     patch "/todos/:id" $ do
       pid <- param "id"
       actionOr404 pid (\tid -> do
@@ -121,8 +117,7 @@ main = do
       todoAct <- jsonData
       let todo = actionToTodo todoAct
       tid <- liftIO $ insertTodo todo
-      todo' <- liftIO $ readTodo tid
-      json todo'
+      json (Sqlite.Entity tid todo)
     delete "/todos" $ liftIO $ runDb $ DB.deleteWhere ([] :: [Sqlite.Filter Todo])
     matchAny "/todos" $ text "ok"
   where

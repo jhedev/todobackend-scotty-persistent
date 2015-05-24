@@ -36,7 +36,7 @@ Todo
 instance ToJSON (Sqlite.Entity Todo) where
   toJSON entity = object
       [ "id" .= key
-      , "url" .= ("http://todobackend-scotty.herokuapp.com/todos/" ++ keyText)
+      , "url" .= ("http://127.0.0.1:3000/todos/" ++ keyText)
       , "title" .= todoTitle val
       , "completed" .= todoCompleted val
       , "order" .= todoOrder val
@@ -48,9 +48,9 @@ instance ToJSON (Sqlite.Entity Todo) where
 
 
 data TodoAction = TodoAction
-  { _actTitle :: Maybe String
-  , _actCompleted :: Maybe Bool
-  , _actOrder :: Maybe Int
+  { actTitle :: Maybe String
+  , actCompleted :: Maybe Bool
+  , actOrder :: Maybe Int
   } deriving Show
 
 instance FromJSON TodoAction where
@@ -78,6 +78,18 @@ actionToTodo (TodoAction mTitle mCompleted mOrder) = Todo title completed order
     completed = fromMaybe False mCompleted
     order     = fromMaybe 0 mOrder
 
+actionToUpdates :: TodoAction -> [Sqlite.Update Todo]
+actionToUpdates act =  updateTitle
+                    ++ updateCompl
+                    ++ updateOrd
+  where
+    updateTitle = maybe [] (\title -> [TodoTitle Sqlite.=. title])
+                  (actTitle act)
+    updateCompl = maybe [] (\compl -> [TodoCompleted Sqlite.=. compl])
+                  (actCompleted act)
+    updateOrd = maybe [] (\ord -> [TodoOrder Sqlite.=. ord])
+                  (actOrder act)
+
 allowCors :: Middleware
 allowCors = addHeaders [
     ("Access-Control-Allow-Origin", "*"),
@@ -87,7 +99,6 @@ allowCors = addHeaders [
 
 runDb :: Sqlite.SqlPersistT (ResourceT (NoLoggingT IO)) a -> IO a
 runDb = runNoLoggingT . runResourceT . Sqlite.withSqliteConn "dev.sqlite3" . Sqlite.runSqlConn
-
 
 main :: IO ()
 main = do
@@ -107,8 +118,8 @@ main = do
       pid <- param "id"
       actionOr404 pid (\tid -> do
                           todoAct <- jsonData
-                          let todo = actionToTodo todoAct
-                          liftIO $ replaceTodo tid todo
+                          let todoUp = actionToUpdates todoAct
+                          todo <- liftIO $ runDb $ DB.updateGet tid todoUp
                           json (Sqlite.Entity tid todo))
     delete "/todos/:id" $ do
       pid <- param "id"
@@ -127,9 +138,6 @@ main = do
 
     readTodo :: Sqlite.Key Todo -> IO (Maybe Todo)
     readTodo tid = runDb $ DB.get tid
-
-    replaceTodo :: Sqlite.Key Todo -> Todo -> IO ()
-    replaceTodo tid todo = runDb $ DB.replace tid todo
 
     deleteTodo :: Sqlite.Key Todo -> IO ()
     deleteTodo tid = runDb $ DB.delete tid

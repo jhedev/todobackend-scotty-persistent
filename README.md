@@ -1,3 +1,5 @@
+#**Deprecated in favor of [todobackend-haskell](https://github.com/jhedev/todobackend-haskell)**
+
 todobackend-scotty-persistent
 =============================
 [![build status](https://circleci.com/gh/jhedev/todobackend-scotty-persistent.svg?style=shield)](https://circleci.com/gh/jhedev/todobackend-scotty-persistent/tree/master)
